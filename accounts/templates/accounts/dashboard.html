@@ -1,0 +1,58 @@
+
+{% extends "accounts/base.html" %}
+
+{% block title %}Dashboard | User Access Management{% endblock %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p>Overview of employee accounts and access management.</p>
+
+<div class="cards">
+    <div class="card">
+        <h3>Total Users</h3>
+        <p>{{ total_users }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Active Users</h3>
+        <p>{{ active_users }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Inactive Users</h3>
+        <p>{{ inactive_users }}</p>
+    </div>
+
+    <div class="card">
+        <h3>Employee Profiles</h3>
+        <p>{{ total_profiles }}</p>
+    </div>
+</div>
+
+<section class="panel">
+    
+<div class="panel">
+    <h2>User Management</h2>
+    <p>Manage employee accounts, roles, and access permissions.</p>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
+        <a class="button" href="{% url 'accounts:employee_list' %}">
+            Manage Employees
+        </a>
+
+        <a class="button" href="{% url 'accounts:employee_create' %}">
+            + Add Employee
+        </a>
+
+        <a class="button" href="/admin/auth/user/">
+            Manage Users
+        </a>
+
+        <a class="button" href="/admin/auth/group/">
+            Manage Roles
+        </a>
+    </div>
+</div>
+
+</section>
+{% endblock %}

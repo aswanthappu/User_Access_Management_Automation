@@ -1,0 +1,61 @@
+
+{% extends "accounts/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1>Employee Management</h1>
+
+    <a class="button" href="{% url 'accounts:employee_create' %}">
+        Add Employee
+    </a>
+
+    <div class="panel" style="margin-top:20px; overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th align="left">Employee ID</th>
+                    <th align="left">Username</th>
+                    <th align="left">Name</th>
+                    <th align="left">Email</th>
+                    <th align="left">Department</th>
+                    <th align="left">Role</th>
+                    <th align="left">Status</th>
+                    <th align="left">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ employee.employee_id }}</td>
+                    <td>{{ employee.user.username }}</td>
+                    <td>{{ employee.user.get_full_name|default:employee.user.username }}</td>
+                    <td>{{ employee.user.email }}</td>
+                    <td>{{ employee.get_department_display }}</td>
+                    <td>
+                        {% for group in employee.user.groups.all %}
+                            {{ group.name }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            No role assigned
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if employee.user.is_active %}Active{% else %}Inactive{% endif %}
+                    </td>
+                    <td>
+                        <a class="button"
+                           href="{% url 'accounts:employee_edit' employee.pk %}">
+                            Edit
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8">No employees found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

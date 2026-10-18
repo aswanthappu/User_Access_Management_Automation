@@ -1,0 +1,39 @@
+
+{% extends "accounts/base.html" %}
+
+{% block title %}Edit Employee{% endblock %}
+
+{% block content %}
+<div class="panel" style="max-width:700px; margin:auto;">
+    <h1>Edit Employee</h1>
+    <p>Update details for {{ employee.user.username }}.</p>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+
+        {% for field in form %}
+            <div style="margin-bottom:18px;">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+
+                <div style="margin-top:6px;">
+                    {{ field }}
+                </div>
+
+                {% for error in field.errors %}
+                    <p style="color:#dc2626;">{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button class="button" type="submit">Save Changes</button>
+
+        <a class="button" href="{% url 'accounts:employee_list' %}">
+            Cancel
+        </a>
+    </form>
+</div>
+{% endblock %}
