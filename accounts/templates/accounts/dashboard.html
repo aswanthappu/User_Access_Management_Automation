@@ -30,29 +30,40 @@
 </div>
 
 <section class="panel">
-    
-<div class="panel">
     <h2>User Management</h2>
-    <p>Manage employee accounts, roles, and access permissions.</p>
 
-    <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
-        <a class="button" href="{% url 'accounts:employee_list' %}">
-            Manage Employees
+    {% if can_manage_employees %}
+        <p>Manage employee accounts, roles, and access permissions.</p>
+    {% elif can_view_employees %}
+        <p>View and search employee records.</p>
+    {% else %}
+        <p>
+            Welcome, {{ request.user.get_full_name|default:request.user.username }}.
+        </p>
+        <p>View your own employee information and account status.</p>
+    {% endif %}
+
+    <div class="dashboard-actions">
+        <a class="button" href="{% url 'accounts:my_profile' %}">
+            My Profile
         </a>
 
-        <a class="button" href="{% url 'accounts:employee_create' %}">
-            + Add Employee
-        </a>
+        {% if can_view_employees %}
+            <a class="button" href="{% url 'accounts:employee_list' %}">
+                Manage Employees
+            </a>
+        {% endif %}
 
-        <a class="button" href="/admin/auth/user/">
-            Manage Users
-        </a>
+        {% if can_manage_employees %}
+            <a class="button" href="{% url 'accounts:employee_create' %}">
+                + Add Employee
+            </a>
+        {% endif %}
 
-        <a class="button" href="/admin/auth/group/">
-            Manage Roles
-        </a>
+        {% if can_access_django_admin %}
+            <a class="button" href="/admin/auth/user/">Manage Users</a>
+            <a class="button" href="/admin/auth/group/">Manage Roles</a>
+        {% endif %}
     </div>
-</div>
-
 </section>
 {% endblock %}

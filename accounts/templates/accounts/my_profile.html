@@ -1,0 +1,48 @@
+
+{% extends "accounts/base.html" %}
+
+{% block title %}My Profile | User Access Management{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>My Profile</h1>
+
+    <div class="panel">
+        {% if employee %}
+            <p><strong>Employee ID:</strong> {{ employee.employee_id }}</p>
+            <p><strong>Username:</strong> {{ employee.user.username }}</p>
+            <p><strong>Full Name:</strong> {{ employee.user.get_full_name|default:employee.user.username }}</p>
+            <p><strong>Email:</strong> {{ employee.user.email|default:"Not provided" }}</p>
+            <p><strong>Department:</strong> {{ employee.get_department_display }}</p>
+            <p><strong>Job Title:</strong> {{ employee.job_title|default:"Not specified" }}</p>
+            <p>
+                <strong>Account Status:</strong>
+                {% if employee.user.is_active %}Active{% else %}Inactive{% endif %}
+            </p>
+            <p>
+                <strong>Role:</strong>
+                {% for group in employee.user.groups.all %}
+                    {{ group.name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                    No role assigned
+                {% endfor %}
+            </p>
+        {% else %}
+            <h2>Administrative Account</h2>
+            <p>This account is used for administration and does not have an employee profile.</p>
+        {% endif %}
+
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:20px;">
+            <a class="button" href="{% url 'accounts:dashboard' %}">
+                Back to Dashboard
+            </a>
+
+            {% if employee %}
+                <a class="button" href="{% url 'accounts:password_change' %}">
+                    Change Password
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

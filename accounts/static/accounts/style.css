@@ -93,3 +93,259 @@ body {
 .logout-button:hover {
     text-decoration: underline;
 }
+/* Change Password Form */
+.form-group {
+    margin-bottom: 22px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.form-group input[type="password"] {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #ffffff;
+    color: #1e293b;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input[type="password"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.form-group ul {
+    margin-top: 8px;
+    margin-bottom: 8px;
+    padding-left: 22px;
+    color: #475569;
+    font-size: 13px;
+}
+
+.form-group .error,
+.errorlist {
+    color: #dc2626;
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+.panel form button,
+.panel form a.button {
+    margin-top: 10px;
+    margin-right: 10px;
+}
+
+/* Password change form */
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #202938;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    max-width: 450px;
+    padding: 11px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #202938;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+}
+
+.form-group input:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #2563eb;
+}
+
+.help-text {
+    margin-top: 8px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.help-text ul {
+    padding-left: 22px;
+}
+
+.error {
+    margin-top: 8px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+form button.button {
+    border: none;
+    cursor: pointer;
+    font-size: 15px;
+    font-family: Arial, sans-serif;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 0 16px;
+    }
+
+    .panel {
+        padding: 18px;
+    }
+
+    .form-group input {
+        max-width: 100%;
+    }
+}
+
+
+/* Password change page layout */
+.password-panel {
+    width: 100%;
+    max-width: 850px;
+    margin: 0 auto;
+}
+
+.password-field {
+    margin-bottom: 24px;
+}
+
+.password-field > label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 600;
+    color: #202938;
+}
+
+.password-field input[type="password"] {
+    display: block;
+    width: 100%;
+    max-width: 540px;
+    min-height: 48px;
+    padding: 12px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    background: #fff;
+    color: #202938;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+}
+
+.password-field input[type="password"]:focus {
+    outline: 2px solid #93c5fd;
+    border-color: #2563eb;
+}
+
+/* Password requirements and help text */
+.password-help {
+    display: block;
+    width: 100%;
+    max-width: 540px;
+    margin-top: 12px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.password-help p {
+    margin: 0 0 8px;
+    font-weight: 600;
+}
+
+.password-help ul {
+    margin: 0;
+    padding-left: 24px;
+}
+
+.password-field .help-text {
+    display: block;
+    margin-top: 12px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Validation errors */
+.password-field .error,
+.password-panel .error,
+.password-panel .errorlist {
+    margin-top: 10px;
+    color: #dc2626;
+    font-size: 14px;
+}
+
+/* Buttons */
+.password-panel form button.button {
+    border: none;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+}
+
+/* Mobile layout */
+@media (max-width: 600px) {
+    .password-panel {
+        padding: 18px;
+    }
+
+    .password-field input[type="password"],
+    .password-help {
+        max-width: 100%;
+    }
+}
+.password-change-form .password-field {
+    margin-bottom: 24px;
+}
+
+.password-change-form .password-help {
+    margin-top: 12px;
+    margin-bottom: 0;
+    max-width: 540px;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.password-change-form .password-help ul {
+    margin: 6px 0 0;
+    padding-left: 24px;
+}
+
+.password-change-form .password-field input[type="password"] {
+    display: block;
+    width: 100%;
+    max-width: 540px;
+    min-height: 48px;
+    padding: 12px 14px;
+}
+
+.password-change-form .password-field:last-of-type {
+    margin-bottom: 24px;
+}
+.dashboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.dashboard-actions .button {
+    margin: 0;
+}

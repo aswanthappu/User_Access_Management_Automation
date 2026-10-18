@@ -9,7 +9,9 @@ from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
-
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.views import PasswordChangeView
+from django.urls import reverse_lazy
 from .forms import EmployeeForm, EmployeeEditForm
 from .models import EmployeeProfile
 
@@ -53,18 +55,28 @@ def role_required(*allowed_roles):
     return decorator
 
 
+
 @login_required
 def dashboard(request):
-    return render(
-        request,
-        "accounts/dashboard.html",
-        {
-            "total_users": User.objects.count(),
-            "active_users": User.objects.filter(is_active=True).count(),
-            "inactive_users": User.objects.filter(is_active=False).count(),
-            "total_profiles": EmployeeProfile.objects.count(),
-        },
+    user = request.user
+    is_admin = (
+        user.is_superuser
+        or user.groups.filter(name="Administrator").exists()
     )
+    is_manager = user.groups.filter(name="Manager").exists()
+
+    context = {
+        "total_users": User.objects.count(),
+        "active_users": User.objects.filter(is_active=True).count(),
+        "inactive_users": User.objects.filter(is_active=False).count(),
+        "total_profiles": EmployeeProfile.objects.count(),
+        "can_view_employees": is_admin or is_manager,
+        "can_manage_employees": is_admin,
+        "can_access_django_admin": user.is_superuser,
+    }
+
+    return render(request, "accounts/dashboard.html", context)
+
 
 
 @login_required
@@ -248,3 +260,39 @@ def employee_edit(request, pk):
         "accounts/employee_edit.html",
         {"form": form, "employee": employee},
     )
+
+
+
+@login_required
+def my_profile(request):
+    employee = EmployeeProfile.objects.filter(
+        user=request.user
+    ).first()
+
+    if employee is None:
+        return render(
+            request,
+            "accounts/my_profile.html",
+            {"employee": None},
+        )
+
+    return render(
+        request,
+        "accounts/my_profile.html",
+        {"employee": employee},
+    )
+class DebugPasswordChangeView(PasswordChangeView):
+    template_name = "accounts/password_change.html"
+    success_url = reverse_lazy("accounts:password_change_done")
+
+    def form_invalid(self, form):
+        password1 = form.data.get("new_password1", "")
+        password2 = form.data.get("new_password2", "")
+
+        print("Password change diagnostic:")
+        print("New password field present:", bool(password1))
+        print("Confirmation field present:", bool(password2))
+        print("Both fields match:", password1 == password2)
+
+        return super().form_invalid(form)
+
