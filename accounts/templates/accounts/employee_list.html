@@ -10,8 +10,67 @@
         Add Employee
     </a>
 
-    <div class="panel" style="margin-top:20px; overflow-x:auto;">
-        <table style="width:100%; border-collapse:collapse;">
+    <!-- Search and filters -->
+    <div class="panel" style="margin-top: 20px; margin-bottom: 20px;">
+        <form method="get" action="{% url 'accounts:employee_list' %}">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+
+                <input
+                    type="search"
+                    name="q"
+                    value="{{ search_query }}"
+                    placeholder="Search ID, username, name, or email..."
+                    aria-label="Search employees"
+                    style="flex: 1; min-width: 220px; padding: 10px;"
+                >
+
+                <select name="department" aria-label="Filter by department"
+                        style="padding: 10px;">
+                    <option value="">All Departments</option>
+                    {% for code, label in departments %}
+                        <option value="{{ code }}"
+                            {% if selected_department == code %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select name="role" aria-label="Filter by role"
+                        style="padding: 10px;">
+                    <option value="">All Roles</option>
+                    {% for item in roles %}
+                        <option value="{{ item }}"
+                            {% if selected_role == item %}selected{% endif %}>
+                            {{ item }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <select name="status" aria-label="Filter by status"
+                        style="padding: 10px;">
+                    <option value="">All Statuses</option>
+                    <option value="active"
+                        {% if selected_status == "active" %}selected{% endif %}>
+                        Active
+                    </option>
+                    <option value="inactive"
+                        {% if selected_status == "inactive" %}selected{% endif %}>
+                        Inactive
+                    </option>
+                </select>
+
+                <button class="button" type="submit">Search / Filter</button>
+
+                <a class="button" href="{% url 'accounts:employee_list' %}">
+                    Clear
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Employee table -->
+    <div class="panel" style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
                     <th align="left">Employee ID</th>
@@ -24,13 +83,14 @@
                     <th align="left">Actions</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for employee in employees %}
                 <tr>
                     <td>{{ employee.employee_id }}</td>
                     <td>{{ employee.user.username }}</td>
                     <td>{{ employee.user.get_full_name|default:employee.user.username }}</td>
-                    <td>{{ employee.user.email }}</td>
+                    <td>{{ employee.user.email|default:"-" }}</td>
                     <td>{{ employee.get_department_display }}</td>
                     <td>
                         {% for group in employee.user.groups.all %}
@@ -40,7 +100,11 @@
                         {% endfor %}
                     </td>
                     <td>
-                        {% if employee.user.is_active %}Active{% else %}Inactive{% endif %}
+                        {% if employee.user.is_active %}
+                            Active
+                        {% else %}
+                            Inactive
+                        {% endif %}
                     </td>
                     <td>
                         <a class="button"
@@ -51,7 +115,9 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8">No employees found.</td>
+                    <td colspan="8" style="padding: 20px;">
+                        No employees match your search or filters.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

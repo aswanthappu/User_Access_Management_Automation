@@ -79,7 +79,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'user_access_db',
         'USER': 'uam_app',
-        'PASSWORD': 'your_passwd',
+        'PASSWORD': 'Madmax@098',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {

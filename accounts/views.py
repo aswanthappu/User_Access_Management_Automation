@@ -5,10 +5,10 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
-from django.db.models import Q
 
 from .forms import EmployeeForm, EmployeeEditForm
 from .models import EmployeeProfile
@@ -55,13 +55,16 @@ def role_required(*allowed_roles):
 
 @login_required
 def dashboard(request):
-    context = {
-        "total_users": User.objects.count(),
-        "active_users": User.objects.filter(is_active=True).count(),
-        "inactive_users": User.objects.filter(is_active=False).count(),
-        "total_profiles": EmployeeProfile.objects.count(),
-    }
-    return render(request, "accounts/dashboard.html", context)
+    return render(
+        request,
+        "accounts/dashboard.html",
+        {
+            "total_users": User.objects.count(),
+            "active_users": User.objects.filter(is_active=True).count(),
+            "inactive_users": User.objects.filter(is_active=False).count(),
+            "total_profiles": EmployeeProfile.objects.count(),
+        },
+    )
 
 
 @login_required
@@ -73,10 +76,55 @@ def employee_list(request):
         .prefetch_related("user__groups")
         .order_by("employee_id")
     )
+
+    search_query = request.GET.get("q", "").strip()
+
+    if search_query:
+        employees = employees.filter(
+            Q(employee_id__icontains=search_query)
+            | Q(user__username__icontains=search_query)
+            | Q(user__first_name__icontains=search_query)
+            | Q(user__last_name__icontains=search_query)
+            | Q(user__email__icontains=search_query)
+        )
+
+    department = request.GET.get("department", "").strip()
+    valid_departments = dict(EmployeeProfile.DEPARTMENT_CHOICES)
+
+    if department in valid_departments:
+        employees = employees.filter(department=department)
+    else:
+        department = ""
+
+    role = request.GET.get("role", "").strip()
+    valid_roles = ["Administrator", "Manager", "Employee"]
+
+    if role in valid_roles:
+        employees = employees.filter(user__groups__name=role).distinct()
+    else:
+        role = ""
+
+    status = request.GET.get("status", "").strip().lower()
+
+    if status == "active":
+        employees = employees.filter(user__is_active=True)
+    elif status == "inactive":
+        employees = employees.filter(user__is_active=False)
+    else:
+        status = ""
+
     return render(
         request,
         "accounts/employee_list.html",
-        {"employees": employees},
+        {
+            "employees": employees,
+            "search_query": search_query,
+            "selected_department": department,
+            "selected_role": role,
+            "selected_status": status,
+            "departments": EmployeeProfile.DEPARTMENT_CHOICES,
+            "roles": valid_roles,
+        },
     )
 
 
@@ -175,7 +223,6 @@ def employee_edit(request, pk):
                     request,
                     "Update failed. Check the server terminal.",
                 )
-
     else:
         current_role = user.groups.filter(
             name__in=["Administrator", "Manager", "Employee"]
