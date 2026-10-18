@@ -660,3 +660,20 @@ form button.button {
     color: #92400e;
     background: #fef3c7;
 }
+.logout-form {
+    display: inline;
+    margin: 0;
+}
+
+.logout-button {
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+}
+
+.logout-button:hover {
+    text-decoration: underline;
+}
