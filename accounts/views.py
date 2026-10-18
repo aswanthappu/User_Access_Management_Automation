@@ -4,18 +4,45 @@ from functools import wraps
 from django.contrib import messages
 from django.contrib.auth import get_user_model, views as auth_views
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import PasswordChangeView
 from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.views import PasswordChangeView
-from django.urls import reverse_lazy
+
 from .forms import EmployeeForm, EmployeeEditForm
-from .models import EmployeeProfile
+from .models import EmployeeProfile, AuditLog
+from django.core.paginator import Paginator
 
 User = get_user_model()
+
+
+def get_client_ip(request):
+    """Get the client's IP address when available."""
+    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
+
+    # Only trust this header when set by a trusted proxy.
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+
+    return request.META.get("REMOTE_ADDR")
+
+
+def write_audit_log(
+    request,
+    action,
+    target_user=None,
+    details="",
+):
+    """Create an audit record for an authenticated user's action."""
+    AuditLog.objects.create(
+        actor=request.user if request.user.is_authenticated else None,
+        target_user=target_user,
+        action=action,
+        details=details,
+        ip_address=get_client_ip(request),
+    )
 
 
 class AppLoginView(auth_views.LoginView):
@@ -27,11 +54,15 @@ class AppLogoutView(auth_views.LogoutView):
     next_page = reverse_lazy("accounts:login")
 
 
+
 def role_required(*allowed_roles):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
+
+            if not user.is_authenticated:
+                return redirect("accounts:login")
 
             if (
                 user.is_superuser
@@ -52,6 +83,7 @@ def role_required(*allowed_roles):
             return redirect("accounts:dashboard")
 
         return wrapper
+
     return decorator
 
 
@@ -59,6 +91,7 @@ def role_required(*allowed_roles):
 @login_required
 def dashboard(request):
     user = request.user
+
     is_admin = (
         user.is_superuser
         or user.groups.filter(name="Administrator").exists()
@@ -76,7 +109,6 @@ def dashboard(request):
     }
 
     return render(request, "accounts/dashboard.html", context)
-
 
 
 @login_required
@@ -112,7 +144,9 @@ def employee_list(request):
     valid_roles = ["Administrator", "Manager", "Employee"]
 
     if role in valid_roles:
-        employees = employees.filter(user__groups__name=role).distinct()
+        employees = employees.filter(
+            user__groups__name=role
+        ).distinct()
     else:
         role = ""
 
@@ -169,6 +203,20 @@ def employee_create(request):
 
                     user.groups.add(data["role"])
 
+                    write_audit_log(
+                        request,
+                        "USER_CREATED",
+                        user,
+                        f"Created employee account: {user.username}.",
+                    )
+
+                    write_audit_log(
+                        request,
+                        "ROLE_CHANGED",
+                        user,
+                        f"Initial role assigned: {data['role'].name}.",
+                    )
+
                 messages.success(
                     request,
                     f"Employee {user.username} created successfully.",
@@ -207,6 +255,12 @@ def employee_edit(request, pk):
         if form.is_valid():
             data = form.cleaned_data
 
+            original_role = user.groups.filter(
+                name__in=["Administrator", "Manager", "Employee"]
+            ).first()
+            original_is_active = user.is_active
+            original_username = user.username
+
             try:
                 with transaction.atomic():
                     employee.employee_id = data["employee_id"]
@@ -222,6 +276,45 @@ def employee_edit(request, pk):
                     user.save()
 
                     user.groups.set([data["role"]])
+
+                    write_audit_log(
+                        request,
+                        "USER_UPDATED",
+                        user,
+                        f"Updated employee profile for {user.username}.",
+                    )
+
+                    if (
+                        original_role is None
+                        or original_role.pk != data["role"].pk
+                    ):
+                        old_role = (
+                            original_role.name
+                            if original_role
+                            else "None"
+                        )
+
+                        write_audit_log(
+                            request,
+                            "ROLE_CHANGED",
+                            user,
+                            f"Role changed from {old_role} "
+                            f"to {data['role'].name}.",
+                        )
+
+                    if original_is_active != user.is_active:
+                        action = (
+                            "USER_ACTIVATED"
+                            if user.is_active
+                            else "USER_DEACTIVATED"
+                        )
+
+                        write_audit_log(
+                            request,
+                            action,
+                            user,
+                            f"Account status changed for {user.username}.",
+                        )
 
                 messages.success(
                     request,
@@ -262,28 +355,40 @@ def employee_edit(request, pk):
     )
 
 
-
 @login_required
 def my_profile(request):
     employee = EmployeeProfile.objects.filter(
         user=request.user
     ).first()
 
-    if employee is None:
-        return render(
-            request,
-            "accounts/my_profile.html",
-            {"employee": None},
-        )
-
     return render(
         request,
         "accounts/my_profile.html",
         {"employee": employee},
     )
+
+
 class DebugPasswordChangeView(PasswordChangeView):
     template_name = "accounts/password_change.html"
     success_url = reverse_lazy("accounts:password_change_done")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        # Preserve the user's current login session.
+        # Record the event without logging any password values.
+        try:
+            write_audit_log(
+                self.request,
+                "PASSWORD_CHANGED",
+                self.request.user,
+                "User changed their own password.",
+            )
+        except Exception as exc:
+            # Do not expose password information in diagnostic output.
+            print(f"Password audit logging failed: {exc!r}")
+
+        return response
 
     def form_invalid(self, form):
         password1 = form.data.get("new_password1", "")
@@ -296,3 +401,40 @@ class DebugPasswordChangeView(PasswordChangeView):
 
         return super().form_invalid(form)
 
+@login_required
+@role_required()
+def audit_log_list(request):
+    logs = AuditLog.objects.select_related(
+        "actor", "target_user"
+    ).order_by("-timestamp")
+
+    search_query = request.GET.get("q", "").strip()
+    selected_action = request.GET.get("action", "").strip()
+
+    if search_query:
+        logs = logs.filter(
+            Q(actor__username__icontains=search_query)
+            | Q(target_user__username__icontains=search_query)
+            | Q(details__icontains=search_query)
+            | Q(ip_address__icontains=search_query)
+        )
+
+    valid_actions = dict(AuditLog.ACTION_CHOICES)
+
+    if selected_action in valid_actions:
+        logs = logs.filter(action=selected_action)
+    else:
+        selected_action = ""
+
+    paginator = Paginator(logs, 20)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    context = {
+        "page_obj": page_obj,
+        "search_query": search_query,
+        "selected_action": selected_action,
+        "actions": AuditLog.ACTION_CHOICES,
+        "total_logs": AuditLog.objects.count(),
+    }
+
+    return render(request, "accounts/audit_logs.html", context)

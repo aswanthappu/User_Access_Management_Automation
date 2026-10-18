@@ -1,0 +1,106 @@
+
+{% extends "accounts/base.html" %}
+
+{% block content %}
+<div class="page-container">
+    <h1>Audit Logs</h1>
+    <p>Review user account and access management activity.</p>
+
+    <div class="audit-summary">
+        <strong>Total recorded events:</strong> {{ total_logs }}
+    </div>
+
+    <form method="get" class="filter-form">
+        <input
+            type="text"
+            name="q"
+            value="{{ search_query }}"
+            placeholder="Search actor, target, details, or IP"
+        >
+
+        <select name="action">
+            <option value="">All actions</option>
+            {% for value, label in actions %}
+                <option value="{{ value }}"
+                    {% if selected_action == value %}selected{% endif %}>
+                    {{ label }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Search</button>
+        <a href="{% url 'accounts:audit_logs' %}">Clear</a>
+    </form>
+
+    <div class="table-responsive">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Actor</th>
+                    <th>Action</th>
+                    <th>Target User</th>
+                    <th>Details</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in page_obj %}
+                <tr>
+                    <td>{{ log.timestamp|date:"d M Y, H:i:s" }}</td>
+                    <td>
+                        {% if log.actor %}
+                            {{ log.actor.username }}
+                        {% else %}
+                            System / Deleted User
+                        {% endif %}
+                    </td>
+                    <td>
+    <span class="audit-badge badge-{{ log.action|lower }}">
+        {{ log.get_action_display }}
+    </span>
+</td>
+                    <td>
+                        {% if log.target_user %}
+                            {{ log.target_user.username }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>{{ log.details|default:"—" }}</td>
+                    <td>{{ log.ip_address|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No audit records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page=1&q={{ search_query|urlencode }}&action={{ selected_action|urlencode }}">
+                First
+            </a>
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query|urlencode }}&action={{ selected_action|urlencode }}">
+                Previous
+            </a>
+        {% endif %}
+
+        <span>
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ search_query|urlencode }}&action={{ selected_action|urlencode }}">
+                Next
+            </a>
+            <a href="?page={{ page_obj.paginator.num_pages }}&q={{ search_query|urlencode }}&action={{ selected_action|urlencode }}">
+                Last
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

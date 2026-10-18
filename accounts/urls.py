@@ -18,6 +18,7 @@ urlpatterns = [
         ),
         name="password_change_done",
     ),
+    path("audit-logs/", views.audit_log_list, name="audit_logs"),
     path("my-profile/", views.my_profile, name="my_profile"),
     path("login/", views.AppLoginView.as_view(), name="login"),
     path("logout/", views.AppLogoutView.as_view(), name="logout"),
