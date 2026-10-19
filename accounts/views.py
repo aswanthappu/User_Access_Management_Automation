@@ -391,15 +391,8 @@ class DebugPasswordChangeView(PasswordChangeView):
         return response
 
     def form_invalid(self, form):
-        password1 = form.data.get("new_password1", "")
-        password2 = form.data.get("new_password2", "")
-
-        print("Password change diagnostic:")
-        print("New password field present:", bool(password1))
-        print("Confirmation field present:", bool(password2))
-        print("Both fields match:", password1 == password2)
-
         return super().form_invalid(form)
+
 
 @login_required
 @role_required()
