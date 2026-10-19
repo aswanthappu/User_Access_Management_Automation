@@ -688,7 +688,8 @@ class AccessControlTests(TestCase):
             + "?next="
             + reverse("accounts:employee_create"),
         )
-    def test_role_required_redirects_unauthenticated_user(self):
+    
+    def test_role_required_decorator_redirects_anonymous_user(self):
         from django.contrib.auth.models import AnonymousUser
         from django.http import HttpResponse
         from accounts.views import role_required
@@ -703,7 +704,207 @@ class AccessControlTests(TestCase):
         response = dummy_view(request)
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(
-            response.url,
-            reverse("accounts:login"),
+        self.assertEqual(response.url, reverse("accounts:login")
         )
+
+    
+    def test_employee_form_rejects_duplicate_employee_id(self):
+        from accounts.forms import EmployeeForm
+
+        form = EmployeeForm(data={
+            "employee_id": self.target_profile.employee_id,
+            "username": "unique_user_101",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "unique101@example.com",
+            "department": "IT",
+            "job_title": "Analyst",
+            "role": self.employee_group.pk,
+            "password": "StrongTestPass123!",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("employee_id", form.errors)
+
+    def test_employee_form_rejects_duplicate_username(self):
+        from accounts.forms import EmployeeForm
+
+        form = EmployeeForm(data={
+            "employee_id": "UNIQUE101",
+            "username": self.target_user.username,
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "unique102@example.com",
+            "department": "IT",
+            "job_title": "Analyst",
+            "role": self.employee_group.pk,
+            "password": "StrongTestPass123!",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("username", form.errors)
+
+    def test_employee_form_rejects_duplicate_email(self):
+        from accounts.forms import EmployeeForm
+
+        form = EmployeeForm(data={
+            "employee_id": "UNIQUE102",
+            "username": "unique_user_102",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": self.target_user.email,
+            "department": "IT",
+            "job_title": "Analyst",
+            "role": self.employee_group.pk,
+            "password": "StrongTestPass123!",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
+        
+    
+    def test_employee_edit_form_rejects_duplicate_employee_id(self):
+        from accounts.forms import EmployeeEditForm
+
+        # Create a different employee to edit.
+        edit_user = User.objects.create_user(
+            username="edit_test_user",
+            password="TestPassword123!",
+        )
+        edit_profile = EmployeeProfile.objects.create(
+            user=edit_user,
+            employee_id="EDIT999",
+            department="IT",
+            job_title="Analyst",
+        )
+
+        # TEST100 already belongs to self.target_profile.
+        form = EmployeeEditForm(
+            data={
+                "employee_id": "TEST100",
+                "department": "IT",
+                "job_title": "Analyst",
+                "username": "edit_test_user",
+                "first_name": "Test",
+                "last_name": "Employee",
+                "email": "edit_test@example.com",
+                "is_active": "on",
+                "role": self.employee_group.pk,
+            },
+            employee=edit_profile,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("employee_id", form.errors)
+
+    def test_employee_edit_form_rejects_duplicate_username(self):
+        from accounts.forms import EmployeeEditForm
+
+        form = EmployeeEditForm(
+            data={
+                "employee_id": "NEW101",
+                "department": "IT",
+                "job_title": "Analyst",
+                "username": self.employee.username,
+                "first_name": "Test",
+                "last_name": "Employee",
+                "email": "target@example.com",
+                "is_active": "on",
+                "role": self.employee_group.pk,
+            },
+            employee=self.target_profile,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("username", form.errors)
+
+    def test_employee_edit_form_rejects_duplicate_email(self):
+        from accounts.forms import EmployeeEditForm
+
+        edit_user = User.objects.create_user(
+            username="edit_email_user",
+            password="TestPassword123!",
+            email="edit_email@example.com",
+        )
+        edit_profile = EmployeeProfile.objects.create(
+            user=edit_user,
+            employee_id="EDIT998",
+            department="IT",
+            job_title="Analyst",
+        )
+
+        # Assign the same email to another user.
+        User.objects.create_user(
+            username="another_email_user",
+            password="TestPassword123!",
+            email="edit_email@example.com",
+        )
+
+        form = EmployeeEditForm(
+            data={
+                "employee_id": "EDIT998",
+                "department": "IT",
+                "job_title": "Analyst",
+                "username": "edit_email_user",
+                "first_name": "Test",
+                "last_name": "Employee",
+                "email": "edit_email@example.com",
+                "is_active": "on",
+                "role": self.employee_group.pk,
+            },
+            employee=edit_profile,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
+
+    def test_employee_form_rejects_duplicate_email_case_insensitively(self):
+        from accounts.forms import EmployeeForm
+
+        self.target_user.email = "existing@example.com"
+        self.target_user.save(update_fields=["email"])
+
+        form = EmployeeForm(data={
+            "employee_id": "UNIQUE103",
+            "username": "unique_user_103",
+            "first_name": "Test",
+            "last_name": "User",
+            "email": "EXISTING@example.com",
+            "department": "IT",
+            "job_title": "Analyst",
+            "role": self.employee_group.pk,
+            "password": "StrongTestPass123!",
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
+
+    def test_employee_profile_string_representation(self):
+        expected = f"{self.target_profile.employee_id} - {self.target_user.username}"
+        self.assertEqual(str(self.target_profile), expected)
+
+    def test_audit_log_string_representation(self):
+        log = AuditLog.objects.create(
+            actor=self.admin,
+            target_user=self.target_user,
+            action="LOGIN",
+            details="String representation test",
+        )
+
+        expected = f"{log.get_action_display()} - {log.timestamp}"
+        self.assertEqual(str(log), expected)
+
+    def test_logout_signal_with_none_user_does_not_create_audit_log(self):
+        from django.contrib.auth.signals import user_logged_out
+
+        before_count = AuditLog.objects.filter(action="LOGOUT").count()
+
+        user_logged_out.send(
+            sender=User,
+            request=None,
+            user=None,
+        )
+
+        after_count = AuditLog.objects.filter(action="LOGOUT").count()
+
+        self.assertEqual(after_count, before_count)
