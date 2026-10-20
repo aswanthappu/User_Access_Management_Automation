@@ -161,8 +161,15 @@ def employee_list(request):
         employees = employees.filter(user__is_active=False)
     else:
         status = ""
-
+    print("Logged-in user:", request.user.username)
+    print("Authenticated:", request.user.is_authenticated)
+    print("Superuser:", request.user.is_superuser)
+    print(
+           "Administrator group:",
+        request.user.groups.filter(name="Administrator").exists(),
+    )
     return render(
+        
         request,
         "accounts/employee_list.html",
         {
@@ -174,8 +181,13 @@ def employee_list(request):
             "departments": EmployeeProfile.DEPARTMENT_CHOICES,
             "roles": valid_roles,
             "can_manage_employees": (
-            request.user.is_superuser
-            or request.user.groups.filter(name="Administrator").exists()
+                request.user.is_authenticated
+                and (
+                    request.user.is_superuser
+                    or request.user.groups.filter(
+                        name="Administrator"
+                    ).exists()
+                )
             ),
         },
     )
