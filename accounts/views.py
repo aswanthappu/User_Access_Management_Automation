@@ -10,6 +10,8 @@ from django.db.models import Q
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
+from django.contrib.sessions.models import Session
+from django.utils import timezone
 
 from .forms import EmployeeForm, EmployeeEditForm
 from .models import EmployeeProfile, AuditLog
@@ -170,6 +172,10 @@ def employee_list(request):
             "selected_status": status,
             "departments": EmployeeProfile.DEPARTMENT_CHOICES,
             "roles": valid_roles,
+            "can_manage_employees": (
+            request.user.is_superuser
+            or request.user.groups.filter(name="Administrator").exists()
+            ),
         },
     )
 
@@ -354,6 +360,76 @@ def employee_edit(request, pk):
         {"form": form, "employee": employee},
     )
 
+
+def revoke_user_sessions(user):
+    """Delete active database-backed sessions belonging to a user."""
+    user_id = str(user.pk)
+
+    sessions = Session.objects.filter(
+        expire_date__gt=timezone.now()
+    )
+
+    for session in sessions.iterator():
+        session_data = session.get_decoded()
+
+        if session_data.get("_auth_user_id") == user_id:
+            session.delete()
+            
+@login_required
+@role_required()
+@require_http_methods(["POST"])
+def employee_offboard(request, pk):
+    employee = get_object_or_404(
+        EmployeeProfile.objects.select_related("user"),
+        pk=pk,
+    )
+    user = employee.user
+
+    if not user.is_active:
+        messages.info(
+            request,
+            f"{user.username} is already inactive.",
+        )
+        return redirect("accounts:employee_list")
+
+    # Prevent accidentally offboarding the currently logged-in admin.
+    if user.pk == request.user.pk:
+        messages.error(
+            request,
+            "You cannot offboard your own account.",
+        )
+        return redirect("accounts:employee_list")
+
+    try:
+     with transaction.atomic():
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        revoke_user_sessions(user)
+
+        write_audit_log(
+            request,
+            "USER_DEACTIVATED",
+            user,
+            f"Employee {user.username} was offboarded.",
+        )
+
+        messages.success(
+            request,
+            f"Employee {user.username} has been offboarded.",
+        )
+
+     
+    except Exception:
+        import traceback
+        traceback.print_exc()
+
+        messages.error(
+            request,
+            "Offboarding failed. Check the server terminal.",
+        )
+
+    return redirect("accounts:employee_list")
 
 @login_required
 def my_profile(request):

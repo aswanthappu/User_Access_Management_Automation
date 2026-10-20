@@ -107,11 +107,25 @@
                         {% endif %}
                     </td>
                     <td>
-                        <a class="button"
-                           href="{% url 'accounts:employee_edit' employee.pk %}">
-                            Edit
-                        </a>
-                    </td>
+    <a class="button"
+       href="{% url 'accounts:employee_edit' employee.pk %}">
+        Edit
+    </a>
+
+    {% if can_manage_employees %}
+        <form method="post"
+              action="{% url 'accounts:employee_offboard' employee.pk %}"
+              style="display:inline;"
+              onsubmit="return confirm('Are you sure you want to offboard this employee?');">
+            {% csrf_token %}
+            <button class="button"
+                    type="submit"
+                    {% if not employee.user.is_active or employee.user.pk == request.user.pk %}disabled{% endif %}>
+                Offboard
+            </button>
+        </form>
+    {% endif %}
+</td>
                 </tr>
                 {% empty %}
                 <tr>

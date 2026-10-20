@@ -2,6 +2,7 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
+from . import views
 
 app_name = "accounts"
 
@@ -29,5 +30,10 @@ urlpatterns = [
         "employees/<int:pk>/edit/",
         views.employee_edit,
         name="employee_edit",
+    ),
+    path(
+         "employees/<int:pk>/offboard/",
+         views.employee_offboard,
+         name="employee_offboard",
     ),
 ]
