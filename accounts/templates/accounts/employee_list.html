@@ -112,19 +112,36 @@
         Edit
     </a>
 
-    {% if can_manage_employees %}
-        <form method="post"
-              action="{% url 'accounts:employee_offboard' employee.pk %}"
-              style="display:inline;"
-              onsubmit="return confirm('Are you sure you want to offboard this employee?');">
-            {% csrf_token %}
-            <button class="button"
-                    type="submit"
-                    {% if not employee.user.is_active or employee.user.pk == request.user.pk %}disabled{% endif %}>
-                Offboard
-            </button>
-        </form>
-    {% endif %}
+    {% if employee.user.is_active %}
+    <form method="post"
+          action="{% url 'accounts:employee_offboard' employee.user.pk %}"
+          style="display: inline;"
+          onsubmit="return confirm('Are you sure you want to offboard this employee?');">
+        {% csrf_token %}
+        <button class="button" type="submit">Offboard</button>
+    </form>
+{% else %}
+    <form method="post"
+          action="{% url 'accounts:employee_reactivate' employee.user.pk %}"
+          style="display: inline;"
+          onsubmit="return confirm('Are you sure you want to reactivate this employee?');">
+        {% csrf_token %}
+        <button class="button" type="submit">Reactivate</button>
+    </form>
+    
+<form method="post"
+      action="{% url 'accounts:employee_delete' employee.user.pk %}"
+      style="display: inline;"
+      onsubmit="return confirm('PERMANENTLY delete this user and their associated employee profile? This cannot be undone.');">
+    {% csrf_token %}
+    <button class="button"
+            type="submit"
+            style="background-color: #dc2626;">
+        Delete
+    </button>
+</form>
+
+{% endif %}
 </td>
                 </tr>
                 {% empty %}

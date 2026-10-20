@@ -12,6 +12,7 @@ from django.urls import reverse_lazy
 from django.views.decorators.http import require_http_methods
 from django.contrib.sessions.models import Session
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from .forms import EmployeeForm, EmployeeEditForm
 from .models import EmployeeProfile, AuditLog
@@ -375,60 +376,137 @@ def revoke_user_sessions(user):
         if session_data.get("_auth_user_id") == user_id:
             session.delete()
             
-@login_required
-@role_required()
-@require_http_methods(["POST"])
-def employee_offboard(request, pk):
-    employee = get_object_or_404(
-        EmployeeProfile.objects.select_related("user"),
-        pk=pk,
-    )
-    user = employee.user
 
-    if not user.is_active:
-        messages.info(
-            request,
-            f"{user.username} is already inactive.",
-        )
+@login_required
+@require_POST
+def employee_offboard(request, pk):
+    from django.contrib.auth import get_user_model
+    from django.db import transaction
+    from django.shortcuts import get_object_or_404
+
+    User = get_user_model()
+    user = get_object_or_404(User, pk=pk)
+
+    # Prevent accidentally offboarding your own account.
+    if user.pk == request.user.pk:
+        messages.error(request, "You cannot offboard your own account.")
         return redirect("accounts:employee_list")
 
-    # Prevent accidentally offboarding the currently logged-in admin.
-    if user.pk == request.user.pk:
-        messages.error(
-            request,
-            "You cannot offboard your own account.",
-        )
+    if not user.is_active:
+        messages.info(request, f"{user.username} is already inactive.")
         return redirect("accounts:employee_list")
 
     try:
-     with transaction.atomic():
-        user.is_active = False
-        user.save(update_fields=["is_active"])
+        with transaction.atomic():
+            user.is_active = False
+            user.save(update_fields=["is_active"])
 
-        revoke_user_sessions(user)
+            # Revoke existing sessions for this user.
+            revoke_user_sessions(user)
 
-        write_audit_log(
-            request,
-            "USER_DEACTIVATED",
-            user,
-            f"Employee {user.username} was offboarded.",
-        )
+            AuditLog.objects.create(
+                actor=request.user,
+                target_user=user,
+                action="USER_DEACTIVATED",
+                details=f"Employee {user.username} was offboarded.",
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
 
         messages.success(
             request,
-            f"Employee {user.username} has been offboarded.",
+            f"Employee {user.username} has been offboarded."
         )
-
-     
     except Exception:
         import traceback
         traceback.print_exc()
+        messages.error(request, "Offboarding failed. Check the server terminal.")
 
+    return redirect("accounts:employee_list")
+
+
+@login_required
+@require_POST
+@role_required("Administrator")
+def employee_delete(request, pk):
+    from django.contrib.auth import get_user_model
+    from django.db import transaction
+    from django.shortcuts import get_object_or_404
+
+    User = get_user_model()
+    user = get_object_or_404(User, pk=pk)
+
+    # Prevent deleting your own account.
+    if user.pk == request.user.pk:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect("accounts:employee_list")
+
+    # Protect superuser accounts.
+    if user.is_superuser:
+        messages.error(request, "Superuser accounts cannot be deleted here.")
+        return redirect("accounts:employee_list")
+
+    username = user.username
+
+    try:
+        with transaction.atomic():
+            # Deleting the User normally deletes its EmployeeProfile
+            # if the profile has a CASCADE relationship.
+            user.delete()
+
+            AuditLog.objects.create(
+                actor=request.user,
+                target_user=None,
+                action="USER_DELETED",
+                details=f"User {username} was permanently deleted.",
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+
+        messages.success(
+            request,
+            f"User {username} was permanently deleted."
+        )
+    except Exception:
+        import traceback
+        traceback.print_exc()
         messages.error(
             request,
-            "Offboarding failed. Check the server terminal.",
+            "User deletion failed. Check the server terminal."
         )
 
+    return redirect("accounts:employee_list")
+
+
+@login_required
+@role_required("Administrator")
+@require_POST
+def employee_reactivate(request, user_id):
+    from django.contrib.auth.models import User
+    from django.shortcuts import get_object_or_404
+
+    user = get_object_or_404(User, pk=user_id)
+
+    if user.is_active:
+        messages.info(
+            request,
+            f"Employee {user.username} is already active.",
+        )
+        return redirect("accounts:employee_list")
+
+    user.is_active = True
+    user.save(update_fields=["is_active"])
+
+    AuditLog.objects.create(
+        actor=request.user,
+        target_user=user,
+        action="USER_ACTIVATED",
+        details=f"Employee {user.username} was reactivated.",
+        ip_address=request.META.get("REMOTE_ADDR"),
+    )
+
+    messages.success(
+        request,
+        f"Employee {user.username} has been reactivated.",
+    )
     return redirect("accounts:employee_list")
 
 @login_required

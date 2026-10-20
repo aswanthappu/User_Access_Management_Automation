@@ -36,4 +36,16 @@ urlpatterns = [
          views.employee_offboard,
          name="employee_offboard",
     ),
+    path(
+    "employees/<int:user_id>/reactivate/",
+    views.employee_reactivate,
+    name="employee_reactivate",
+    ),
+    
+    path(
+    "employees/<int:pk>/delete/",
+    views.employee_delete,
+    name="employee_delete",
+    ),
+
 ]
