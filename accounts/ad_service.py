@@ -50,13 +50,15 @@ def _value(entry, attribute):
     return "" if value is None else str(value)
 
 
+
 def _user_details(entry):
     """Convert an LDAP user entry into a template-friendly dictionary."""
     account_control = entry["userAccountControl"].value
-    disabled = (
-        account_control is not None
-        and bool(int(account_control) & 2)
-    )
+
+    if account_control is None:
+        is_disabled = None
+    else:
+        is_disabled = bool(int(account_control) & 2)
 
     return {
         "username": _value(entry, "sAMAccountName"),
@@ -73,7 +75,7 @@ def _user_details(entry):
         "created": _value(entry, "whenCreated"),
         "last_logon": _value(entry, "lastLogonTimestamp"),
         "password_last_set": _value(entry, "pwdLastSet"),
-        "is_disabled": disabled,
+        "is_disabled": is_disabled,
     }
 
 

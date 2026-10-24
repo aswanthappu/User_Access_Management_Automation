@@ -44,9 +44,18 @@
                             <tr><th>Description</th><td>{{ user.description|default:"—" }}</td></tr>
                             <tr><th>Office</th><td>{{ user.office|default:"—" }}</td></tr>
                             <tr><th>Phone</th><td>{{ user.phone|default:"—" }}</td></tr>
-                            <tr><th>Account Status</th>
-                                <td>{% if user.is_disabled %}Disabled{% else %}Enabled{% endif %}</td>
-                            </tr>
+                            <tr>
+    <th>Account Status</th>
+    <td>
+        {% if user.is_disabled == None %}
+            Unknown (AD status unavailable)
+        {% elif user.is_disabled %}
+            Disabled
+        {% else %}
+            Enabled
+        {% endif %}
+    </td>
+</tr>
                             <tr><th>Created</th><td>{{ user.created|default:"—" }}</td></tr>
                             <tr><th>Last Logon</th><td>{{ user.last_logon|default:"—" }}</td></tr>
                             <tr><th>Password Last Set</th><td>{{ user.password_last_set|default:"—" }}</td></tr>

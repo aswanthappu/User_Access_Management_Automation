@@ -60,10 +60,21 @@
             </a>
         {% endif %}
 
+        
         {% if can_access_django_admin %}
             <a class="button" href="/admin/auth/user/">Manage Users</a>
             <a class="button" href="/admin/auth/group/">Manage Roles</a>
         {% endif %}
+
+        {% if request.user.is_superuser or request.user.groups.filter %}
+            <a class="button" href="{% url 'accounts:ad_user_search' %}">
+                Search Active Directory
+            </a>
+            <a class="button" href="{% url 'accounts:ad_user_create' %}">
+                + Create AD User
+            </a>
+        {% endif %}
+
     </div>
 </section>
 {% endblock %}

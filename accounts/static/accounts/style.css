@@ -699,3 +699,38 @@ table th {
 table td {
     line-height: 1.5;
 }
+/* Keep the shared header visible with Bootstrap enabled */
+.topbar {
+    background-color: #172554;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.topbar h2 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.topbar nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.topbar nav a,
+.topbar nav .logout-button {
+    color: #ffffff;
+    text-decoration: none;
+}
+
+.topbar nav a:hover,
+.topbar nav .logout-button:hover {
+    text-decoration: underline;
+}

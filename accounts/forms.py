@@ -137,6 +137,7 @@ class EmployeeEditForm(forms.ModelForm):
 
         return email
 
+
 class ADUserCreateForm(forms.Form):
     username = forms.RegexField(
         regex=r"^[a-zA-Z0-9._-]{1,20}$",
@@ -148,25 +149,48 @@ class ADUserCreateForm(forms.Form):
                 "or hyphens."
             )
         },
+        widget=forms.TextInput(attrs={"class": "form-control"}),
     )
-    first_name = forms.CharField(max_length=64)
-    last_name = forms.CharField(max_length=64)
-    display_name = forms.CharField(max_length=256)
-    email = forms.EmailField(required=False)
-    department = forms.CharField(max_length=64, required=False)
-    job_title = forms.CharField(max_length=64, required=False)
+    first_name = forms.CharField(
+        max_length=64,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    last_name = forms.CharField(
+        max_length=64,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    display_name = forms.CharField(
+        max_length=256,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={"class": "form-control"}),
+    )
+    department = forms.CharField(
+        max_length=64,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
+    job_title = forms.CharField(
+        max_length=64,
+        required=False,
+        widget=forms.TextInput(attrs={"class": "form-control"}),
+    )
     description = forms.CharField(
         max_length=1024,
         required=False,
-        widget=forms.Textarea(attrs={"rows": 3}),
+        widget=forms.Textarea(
+            attrs={"class": "form-control", "rows": 3}
+        ),
     )
     password = forms.CharField(
         min_length=12,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
         help_text="Use a password of at least 12 characters.",
     )
     confirm_password = forms.CharField(
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={"class": "form-control"}),
         label="Confirm password",
     )
 
@@ -185,3 +209,4 @@ class ADUserCreateForm(forms.Form):
             )
 
         return cleaned_data
+
