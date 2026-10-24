@@ -1,0 +1,63 @@
+
+{% extends "accounts/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Active Directory User Search</h2>
+    <p>Search for users in the TEST.local domain.</p>
+
+    <form method="get" action="{% url 'accounts:ad_user_search' %}">
+        <label for="q">Username, display name, or email</label>
+        <input
+            type="text"
+            id="q"
+            name="q"
+            value="{{ search_query }}"
+            maxlength="100"
+            placeholder="Enter a search term"
+            required
+        >
+        <button type="submit">Search AD</button>
+    </form>
+
+    {% if error_message %}
+        <p role="alert">{{ error_message }}</p>
+    {% endif %}
+
+    {% if search_query and not error_message %}
+        <h3>Search Results</h3>
+
+        {% if users %}
+            {% for user in users %}
+                <section style="margin: 20px 0; padding: 16px;
+                                border: 1px solid #ccc; border-radius: 8px;">
+                    <h3>{{ user.display_name|default:user.username }}</h3>
+
+                    <table>
+                        <tbody>
+                            <tr><th>Username</th><td>{{ user.username }}</td></tr>
+                            <tr><th>First Name</th><td>{{ user.first_name|default:"—" }}</td></tr>
+                            <tr><th>Last Name</th><td>{{ user.last_name|default:"—" }}</td></tr>
+                            <tr><th>Email</th><td>{{ user.email|default:"—" }}</td></tr>
+                            <tr><th>Department</th><td>{{ user.department|default:"—" }}</td></tr>
+                            <tr><th>Job Title</th><td>{{ user.job_title|default:"—" }}</td></tr>
+                            <tr><th>Description</th><td>{{ user.description|default:"—" }}</td></tr>
+                            <tr><th>Office</th><td>{{ user.office|default:"—" }}</td></tr>
+                            <tr><th>Phone</th><td>{{ user.phone|default:"—" }}</td></tr>
+                            <tr><th>Account Status</th>
+                                <td>{% if user.is_disabled %}Disabled{% else %}Enabled{% endif %}</td>
+                            </tr>
+                            <tr><th>Created</th><td>{{ user.created|default:"—" }}</td></tr>
+                            <tr><th>Last Logon</th><td>{{ user.last_logon|default:"—" }}</td></tr>
+                            <tr><th>Password Last Set</th><td>{{ user.password_last_set|default:"—" }}</td></tr>
+                            <tr><th>Distinguished Name</th><td>{{ user.distinguished_name }}</td></tr>
+                        </tbody>
+                    </table>
+                </section>
+            {% endfor %}
+        {% else %}
+            <p>No matching Active Directory users found.</p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

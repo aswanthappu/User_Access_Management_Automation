@@ -2,7 +2,6 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
-from . import views
 
 app_name = "accounts"
 
@@ -47,5 +46,6 @@ urlpatterns = [
     views.employee_delete,
     name="employee_delete",
     ),
+    path("active-directory/", views.ad_user_search, name="ad_user_search"),
 
 ]

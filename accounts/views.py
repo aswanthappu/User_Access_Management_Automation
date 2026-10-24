@@ -597,3 +597,31 @@ def audit_log_list(request):
     }
 
     return render(request, "accounts/audit_logs.html", context)
+
+@login_required
+@role_required()
+def ad_user_search(request):
+    from accounts.ad_service import search_ad_users
+
+    search_query = request.GET.get("q", "").strip()
+    users = []
+    error_message = ""
+
+    if search_query:
+        try:
+            users = search_ad_users(search_query)
+        except Exception:
+            error_message = (
+                "Unable to search Active Directory. "
+                "Check the AD connection and server logs."
+            )
+
+    return render(
+        request,
+        "accounts/ad_user_search.html",
+        {
+            "search_query": search_query,
+            "users": users,
+            "error_message": error_message,
+        },
+    )
