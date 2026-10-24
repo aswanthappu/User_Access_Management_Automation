@@ -47,5 +47,10 @@ urlpatterns = [
     name="employee_delete",
     ),
     path("active-directory/", views.ad_user_search, name="ad_user_search"),
+    path(
+    "active-directory/create/",
+    views.ad_user_create,
+    name="ad_user_create",
+    ),
 
 ]

@@ -136,3 +136,52 @@ class EmployeeEditForm(forms.ModelForm):
                 raise forms.ValidationError("Email already exists.")
 
         return email
+
+class ADUserCreateForm(forms.Form):
+    username = forms.RegexField(
+        regex=r"^[a-zA-Z0-9._-]{1,20}$",
+        max_length=20,
+        label="Username (sAMAccountName)",
+        error_messages={
+            "invalid": (
+                "Use 1–20 letters, numbers, dots, underscores, "
+                "or hyphens."
+            )
+        },
+    )
+    first_name = forms.CharField(max_length=64)
+    last_name = forms.CharField(max_length=64)
+    display_name = forms.CharField(max_length=256)
+    email = forms.EmailField(required=False)
+    department = forms.CharField(max_length=64, required=False)
+    job_title = forms.CharField(max_length=64, required=False)
+    description = forms.CharField(
+        max_length=1024,
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 3}),
+    )
+    password = forms.CharField(
+        min_length=12,
+        widget=forms.PasswordInput,
+        help_text="Use a password of at least 12 characters.",
+    )
+    confirm_password = forms.CharField(
+        widget=forms.PasswordInput,
+        label="Confirm password",
+    )
+
+    def clean_username(self):
+        return self.cleaned_data["username"].strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get("password")
+        confirm_password = cleaned_data.get("confirm_password")
+
+        if password and confirm_password and password != confirm_password:
+            self.add_error(
+                "confirm_password",
+                "The passwords do not match.",
+            )
+
+        return cleaned_data

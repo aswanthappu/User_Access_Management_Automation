@@ -14,7 +14,12 @@ from django.contrib.sessions.models import Session
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .forms import EmployeeForm, EmployeeEditForm
+
+from .forms import (
+    EmployeeForm,
+    EmployeeEditForm,
+    ADUserCreateForm,
+)
 from .models import EmployeeProfile, AuditLog
 from django.core.paginator import Paginator
 
@@ -624,4 +629,54 @@ def ad_user_search(request):
             "users": users,
             "error_message": error_message,
         },
+    )
+
+@login_required
+@role_required("Administrator")
+@require_http_methods(["GET", "POST"])
+def ad_user_create(request):
+    from accounts.ad_service import create_ad_user
+
+    if request.method == "POST":
+        form = ADUserCreateForm(request.POST)
+
+        if form.is_valid():
+            data = form.cleaned_data
+
+            try:
+                user_dn = create_ad_user(data)
+
+                # Do not log passwords or other secrets.
+                write_audit_log(
+                    request,
+                    "AD_USER_CREATED",
+                    target_user=None,
+                    details=(
+                        f"Created Active Directory account "
+                        f"{data['username']} at {user_dn}."
+                    ),
+                )
+
+                messages.success(
+                    request,
+                    f"Active Directory user {data['username']} "
+                    "was created and enabled successfully.",
+                )
+                return redirect("accounts:ad_user_search")
+
+            except Exception as exc:
+                # The exception should never include the submitted password.
+                print(f"AD user creation failed: {type(exc).__name__}: {exc}")
+                messages.error(
+                    request,
+                    "Active Directory user creation failed. "
+                    "Check the server terminal and AD account status.",
+                )
+    else:
+        form = ADUserCreateForm()
+
+    return render(
+        request,
+        "accounts/ad_user_create.html",
+        {"form": form},
     )
